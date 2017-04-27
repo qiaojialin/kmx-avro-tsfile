@@ -1,0 +1,7 @@
+s3:
+  encoding: 'TS_2DIFF'
+s2:
+  freq_encoding: 'DFT'
+  dft_pack_length: 10000
+  dft_rate: 0.4
+  write_main_freq:true
