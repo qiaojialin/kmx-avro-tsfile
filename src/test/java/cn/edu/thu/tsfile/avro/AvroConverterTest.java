@@ -1,5 +1,6 @@
 package cn.edu.thu.tsfile.avro;
 
+import cn.edu.thu.tsfile.avro.common.Constant;
 import cn.edu.thu.tsfile.common.constant.JsonFormatConstant;
 import cn.edu.thu.tsfile.file.metadata.enums.TSDataType;
 import cn.edu.thu.tsfile.file.metadata.enums.TSEncoding;
@@ -21,7 +22,7 @@ import java.util.List;
 /**
  *
  * @author stefanie
- * test avro to tsfile converter
+ * Example avro to tsfile converter
  */
 public class AvroConverterTest {
 

@@ -1,5 +1,9 @@
 package cn.edu.thu.tsfile.avro;
 
+import cn.edu.thu.tsfile.avro.common.Constant;
+import cn.edu.thu.tsfile.avro.common.FieldNotFoundException;
+import cn.edu.thu.tsfile.avro.common.FieldNotValidException;
+import cn.edu.thu.tsfile.avro.common.SeriesConfig;
 import cn.edu.thu.tsfile.common.constant.JsonFormatConstant;
 import cn.edu.thu.tsfile.file.metadata.enums.TSDataType;
 import cn.edu.thu.tsfile.timeseries.write.record.DataPoint;
@@ -14,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +28,7 @@ public class AvroConverter {
 	
 	private ConverterUtil convertUtil = new ConverterUtil();
 	private Map yamlAttributes = null;
+	private List<String> keys = new ArrayList<>();
 
 	public AvroConverter() {
 
@@ -37,7 +43,26 @@ public class AvroConverter {
 		if(confPath != null && !confPath.equals(""))
 			yamlAttributes = convertUtil.loadYaml(confPath, conf);
 	}
-	
+
+	public JSONObject convertSchema(Schema avroSchema) throws Exception {
+
+		if (!avroSchema.getType().equals(Schema.Type.RECORD)) {
+			throw new IllegalArgumentException("Avro schema must be a record.");
+		}
+		logger.debug("The avro schema is: {}", avroSchema);
+
+		JSONArray measureGroup = resolveFields(avroSchema.getFields());
+
+		JSONObject tsfileSchema = new JSONObject();
+		tsfileSchema.put(JsonFormatConstant.DELTA_TYPE, Constant.DELTA_TYPE);
+		tsfileSchema.put(JsonFormatConstant.JSON_SCHEMA, measureGroup);
+
+		logger.debug("the jsonobject converted from avro schema is: {}", tsfileSchema);
+		return tsfileSchema;
+
+	}
+
+
 	public TSRecord convertRecord(GenericRecord avroRecord) throws FieldNotFoundException {
 
         Schema schema = avroRecord.getSchema();
@@ -47,23 +72,27 @@ public class AvroConverter {
             throw new FieldNotFoundException(Constant.TIMESTAMP + " is not found");
         }
 
-        String delta_object = avroRecord.get(Constant.DELTA_OBJECT).toString();
-        if (delta_object == null) {
-            throw new FieldNotFoundException(Constant.DELTA_OBJECT + " is not found");
+        String delta_object = null;
+        for(String key: keys) {
+        	String value = avroRecord.get(key).toString();
+        	if(delta_object == null)
+	        	delta_object = key + Constant.DELTA_OBJECT_VALUE_SEPARATOR + value;
+			else
+				delta_object += Constant.DELTA_OBJECT_SEPARATOR + key + Constant.DELTA_OBJECT_VALUE_SEPARATOR + value;
         }
         
         TSRecord tsRecord = new TSRecord(timestamp, delta_object);
 
         //each field is a DataPoint
         for (Schema.Field field : schema.getFields()) {
-        	
-        	String fieldName = field.name();
-        	Object fieldData = avroRecord.get(fieldName);
+        	if(isKey(field) || field.name().equals(Constant.TIMESTAMP) || field.name().equals(Constant.DELTA_TYPE))
+        		continue;
 
-			if (!fieldName.equals(Constant.TIMESTAMP)
-					&& !fieldName.equals(Constant.DELTA_OBJECT) && fieldData != null) {
+        	Object fieldData = avroRecord.get(field.name());
+
+			if (fieldData != null) {
 				TSDataType tsDataType = getDataType(field.schema());
-				DataPoint dataPoint = DataPoint.getDataPoint(tsDataType, fieldName, fieldData.toString());
+				DataPoint dataPoint = DataPoint.getDataPoint(tsDataType, aliasOrName(field), fieldData.toString());
 				tsRecord.addTuple(dataPoint);
 			}
 		}
@@ -94,44 +123,25 @@ public class AvroConverter {
 			return convertUtil.convertAvroTypeToTsfile(type);
 		}
 	}
-
-	public JSONObject convertSchema(Schema avroSchema) throws Exception {
-		
-		if (!avroSchema.getType().equals(Schema.Type.RECORD)) {
-			throw new IllegalArgumentException("Avro schema must be a record.");
-		}
-		logger.debug("The avro schema is: {}", avroSchema.getFields());
-
-		JSONArray measureGroup = resolveFields(avroSchema.getFields());
-
-		JSONObject tsfileSchema = new JSONObject();
-		tsfileSchema.put(JsonFormatConstant.DELTA_TYPE, Constant.DELTA_TYPE);
-		tsfileSchema.put(JsonFormatConstant.JSON_SCHEMA, measureGroup);
-
-		logger.debug("the jsonobject converted from avro schema is: {}", tsfileSchema);
-		return tsfileSchema;
-		
-	}
 	
 	private JSONArray resolveFields(List<Schema.Field> avroFields) throws FieldNotFoundException {
 		
 		boolean timestampFlag = false;
-		boolean deltaObjectFlag = false;
 
 		JSONArray measureGroup = new JSONArray();
 
 		for (Schema.Field field : avroFields) {
-			
+			if (field.name().equals(Constant.DELTA_TYPE))
+				continue;
 			if (field.name().equals(Constant.TIMESTAMP)) {
 				timestampFlag = true;
-			} else if (field.name().equals(Constant.DELTA_OBJECT)) {
-				deltaObjectFlag = true;
 			} else {
 				try {
 					JSONObject measurement = resolveField(field);
-					measureGroup.put(measurement);
+					if(measurement != null)
+						measureGroup.put(measurement);
 				} catch (FieldNotValidException | FieldNotFoundException e) {
-					e.printStackTrace();			
+					e.printStackTrace();
 				}
 			}
 		}
@@ -139,18 +149,21 @@ public class AvroConverter {
 		if (!timestampFlag) {
 			throw new FieldNotFoundException(
 					"the Timestamp field(" + Constant.TIMESTAMP + ") is not found !");
-		} else if (!deltaObjectFlag) {
-			throw new FieldNotFoundException(
-					"the DeviceId field(" + Constant.DELTA_OBJECT + ") is not found !");
 		} else {
 			return measureGroup;
 		}
 	}
 	
 	private JSONObject resolveField(Schema.Field field) throws FieldNotValidException, FieldNotFoundException {
+
+		if(isKey(field)) {
+			keys.add(field.name());
+			return null;
+		}
+
 		SeriesConfig seriesConfig = new SeriesConfig();
 
-		String measurementId = field.name();
+		String measurementId = aliasOrName(field);
 		seriesConfig.setMeasurementId(measurementId);
 		seriesConfig.setSeriesType(field.schema());
 
@@ -169,5 +182,14 @@ public class AvroConverter {
 			}
 		}
 		return seriesConfig.getSensorConfigs();
+	}
+
+	private String aliasOrName(Schema.Field field) {
+		return field.aliases().iterator().hasNext()?field.aliases().iterator().next():field.name();
+	}
+
+	private boolean isKey(Schema.Field field) {
+		Map props = field.getJsonProps();
+		return props != null && props.containsKey("iskey");
 	}
 }
