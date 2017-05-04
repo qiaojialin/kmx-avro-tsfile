@@ -46,12 +46,15 @@ public class Example {
             GenericRecord record;
             while (sequenceReader.next(key, value)) {
                 i++;
+                if(i>10)
+                    break;
                 ByteArrayInputStream in = new ByteArrayInputStream(value.getBytes());
                 BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(in, null);
                 DatumReader<GenericRecord> avroReader = new SpecificDatumReader<>(avroSchema);
                 record = avroReader.read(null, decoder);
                 TSRecord tsRecord = converter.convertRecord(record);
                 tsFile.writeLine(tsRecord);
+                System.out.println(tsRecord);
             }
         } finally {
             IOUtils.closeStream(sequenceReader);

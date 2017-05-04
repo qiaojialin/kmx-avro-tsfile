@@ -18,9 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class AvroConverter {
 	
@@ -28,7 +26,8 @@ public class AvroConverter {
 	
 	private ConverterUtil convertUtil = new ConverterUtil();
 	private Map yamlAttributes = null;
-	private List<String> keys = new ArrayList<>();
+	private Map<String, String> keyAlias = new HashMap<>();
+//	private List<String> keys = new ArrayList<>();
 
 	public AvroConverter() {
 
@@ -73,12 +72,12 @@ public class AvroConverter {
         }
 
         String delta_object = null;
-        for(String key: keys) {
+        for(String key: keyAlias.keySet()) {
         	String value = avroRecord.get(key).toString();
         	if(delta_object == null)
-	        	delta_object = key + Constant.DELTA_OBJECT_VALUE_SEPARATOR + value;
+	        	delta_object = keyAlias.get(key) + Constant.DELTA_OBJECT_VALUE_SEPARATOR + value;
 			else
-				delta_object += Constant.DELTA_OBJECT_SEPARATOR + key + Constant.DELTA_OBJECT_VALUE_SEPARATOR + value;
+				delta_object += Constant.DELTA_OBJECT_SEPARATOR + keyAlias.get(key) + Constant.DELTA_OBJECT_VALUE_SEPARATOR + value;
         }
         
         TSRecord tsRecord = new TSRecord(timestamp, delta_object);
@@ -157,7 +156,7 @@ public class AvroConverter {
 	private JSONObject resolveField(Schema.Field field) throws FieldNotValidException, FieldNotFoundException {
 
 		if(isKey(field)) {
-			keys.add(field.name());
+			keyAlias.put(field.name(), aliasOrName(field));
 			return null;
 		}
 
