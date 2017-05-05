@@ -1,7 +1,7 @@
-s3:
+windSpeed:
   encoding: 'TS_2DIFF'
-s2:
+powerActive:
   freq_encoding: 'DFT'
   dft_pack_length: 10000
   dft_rate: 0.4
-  write_main_freq:true
+  write_main_freq: true

@@ -27,7 +27,6 @@ public class AvroConverter {
 	private ConverterUtil convertUtil = new ConverterUtil();
 	private Map yamlAttributes = null;
 	private Map<String, String> keyAlias = new HashMap<>();
-//	private List<String> keys = new ArrayList<>();
 
 	public AvroConverter() {
 
