@@ -3,7 +3,6 @@ package cn.edu.thu.tsfile.avro;
 import cn.edu.thu.tsfile.avro.common.Constant;
 import cn.edu.thu.tsfile.avro.common.FieldNotFoundException;
 import cn.edu.thu.tsfile.avro.common.FieldNotValidException;
-import cn.edu.thu.tsfile.avro.common.SeriesConfig;
 import cn.edu.thu.tsfile.common.constant.JsonFormatConstant;
 import cn.edu.thu.tsfile.file.metadata.enums.TSDataType;
 import cn.edu.thu.tsfile.timeseries.write.record.DataPoint;
@@ -42,6 +41,12 @@ public class AvroConverter {
 			yamlAttributes = convertUtil.loadYaml(confPath, conf);
 	}
 
+	/**
+	 * convert avro schema to tsfile schema
+	 * @param avroSchema schema of avro
+	 * @return tsfile schema
+	 * @throws Exception
+	 */
 	public JSONObject convertSchema(Schema avroSchema) throws Exception {
 
 		if (!avroSchema.getType().equals(Schema.Type.RECORD)) {
@@ -61,6 +66,12 @@ public class AvroConverter {
 	}
 
 
+	/**
+	 * convert a GenericRecord to TSRecord
+	 * @param avroRecord GenericRecord in avro
+	 * @return TSRecord
+	 * @throws FieldNotFoundException
+	 */
 	public TSRecord convertRecord(GenericRecord avroRecord) throws FieldNotFoundException {
 
         Schema schema = avroRecord.getSchema();

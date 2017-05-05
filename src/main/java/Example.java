@@ -1,5 +1,4 @@
 import cn.edu.thu.tsfile.avro.AvroConverter;
-import cn.edu.thu.tsfile.common.utils.RandomAccessOutputStream;
 import cn.edu.thu.tsfile.common.utils.TSRandomAccessFileWriter;
 import cn.edu.thu.tsfile.hadoop.HDFSOutputStream;
 import cn.edu.thu.tsfile.timeseries.FileFormat.TsFile;
@@ -12,7 +11,6 @@ import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.client.HdfsDataOutputStream;
 import org.apache.hadoop.io.*;
 import org.json.JSONObject;
 

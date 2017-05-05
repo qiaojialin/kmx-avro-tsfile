@@ -1,4 +1,4 @@
-package cn.edu.thu.tsfile.avro.common;
+package cn.edu.thu.tsfile.avro;
 
 import cn.edu.thu.tsfile.avro.ConverterUtil;
 import cn.edu.thu.tsfile.avro.common.Constant;
