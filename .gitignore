@@ -20,3 +20,5 @@
 **/lib/
 *.jar
 /target/
+**/**/core-site.xml
+**/**/hdfs-site.xml

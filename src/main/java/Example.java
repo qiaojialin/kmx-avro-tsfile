@@ -31,6 +31,7 @@ public class Example {
         AvroConverter converter = new AvroConverter(yamlPath, conf);
 
         JSONObject tsfileSchema = converter.convertSchema(avroSchema);
+        System.out.println(tsfileSchema);
 
         TSRandomAccessFileWriter hdfsOutput = new HDFSOutputStream("hdfs://localhost:9000/tsfile/kmx.tsfile", conf, true);
         TsFile tsFile = new TsFile(hdfsOutput, tsfileSchema);
