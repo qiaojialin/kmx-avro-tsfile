@@ -48,6 +48,11 @@ public class HDFSOutputStream implements TSRandomAccessFileWriter {
 	}
 
 	@Override
+	public void seek(long a) {
+		throw new RuntimeException("HDFSOutputStream not support seek");
+	}
+
+	@Override
 	public long getPos() throws IOException {
 
 		return fsDataOutputStream.getPos();
@@ -55,19 +60,19 @@ public class HDFSOutputStream implements TSRandomAccessFileWriter {
 
 	@Override
 	public void write(int b) throws IOException {
-		
+
 		fsDataOutputStream.write(b);
 	}
 
 	@Override
 	public void write(byte[] b) throws IOException {
-		
+
 		fsDataOutputStream.write(b);
 	}
 
 	@Override
 	public void close() throws IOException {
-		
+
 		fsDataOutputStream.close();
 	}
 

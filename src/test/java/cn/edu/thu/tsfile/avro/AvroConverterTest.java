@@ -27,21 +27,28 @@ import java.util.List;
 public class AvroConverterTest {
 
     private Schema avroSchema;
+    private JSONObject tsfileSchema;
+    private AvroConverter converter = new AvroConverter();
 
     @Before
     public void before() throws Exception {
 
         List<Schema.Field> avroFields = new ArrayList<>();
         avroFields.add(new Schema.Field(Constant.TIMESTAMP, Schema.create(Schema.Type.LONG), null, null));
-        avroFields.add(new Schema.Field(Constant.DELTA_OBJECT, Schema.create(Schema.Type.STRING), null, null));
+        Schema.Field key1 = new Schema.Field("key1", Schema.create(Schema.Type.STRING), null, null);
+
+        key1.addProp("iskey", "true");
+        avroFields.add(key1);
         avroFields.add(new Schema.Field("s1", getUnionSchema(Schema.Type.INT), null, null));
         avroFields.add(new Schema.Field("s2", getUnionSchema(Schema.Type.LONG), null, null));
         avroFields.add(new Schema.Field("s3", getUnionSchema(Schema.Type.FLOAT), null, null));
         avroFields.add(new Schema.Field("s4", getUnionSchema(Schema.Type.DOUBLE), null, null));
         avroFields.add(new Schema.Field("s5", getUnionSchema(Schema.Type.BOOLEAN), null, null));
 
-        avroSchema = Schema.createRecord("Record", null, null, false);
+        avroSchema = Schema.createRecord("fg_3000014", null, "k2data", false);
+        avroSchema.addAlias("windfarm_BMdxz_001");
         avroSchema.setFields(avroFields);
+        tsfileSchema = converter.convertSchema(avroSchema);
     }
 
     private Schema getUnionSchema(Schema.Type type) {
@@ -56,18 +63,19 @@ public class AvroConverterTest {
     public void testConvertRecord() throws Exception {
         GenericRecord avroRecord = new GenericData.Record(avroSchema);
         avroRecord.put(Constant.TIMESTAMP, 1481117408000L);
-        avroRecord.put(Constant.DELTA_OBJECT, "d1");
+        avroRecord.put("key1", "d1");
         avroRecord.put("s1", 1);
         avroRecord.put("s2", 2L);
         avroRecord.put("s3", Float.valueOf("1.3"));
         avroRecord.put("s4", Double.valueOf("1.4"));
         avroRecord.put("s5", true);
 
-        TSRecord actualRecord = new AvroConverter().convertRecord(avroRecord);
+
+        TSRecord actualRecord = converter.convertRecord(avroRecord);
 
 
         Long time1 = 1481117408000L;
-        String deviceId1 = "d1";
+        String deviceId1 = "key1:d1";
         TSRecord expectedRecord = new TSRecord(time1, deviceId1);
         DataPoint dataPoint1 = DataPoint.getDataPoint(TSDataType.INT32, "s1", "1");
         DataPoint dataPoint2 = DataPoint.getDataPoint(TSDataType.INT64, "s2", "2");
@@ -79,14 +87,13 @@ public class AvroConverterTest {
         expectedRecord.addTuple(dataPoint3);
         expectedRecord.addTuple(dataPoint4);
         expectedRecord.addTuple(dataPoint5);
+        System.out.println(expectedRecord.toString());
 
         Assert.assertEquals(expectedRecord.toString(), actualRecord.toString());
     }
 
     @Test
     public void testConvertSchema() throws Exception {
-        JSONObject actualSchema = new AvroConverter().convertSchema(avroSchema);
-
         JSONObject s1 = new JSONObject();
         s1.put(JsonFormatConstant.MEASUREMENT_UID, "s1");
         s1.put(JsonFormatConstant.DATA_TYPE, TSDataType.INT32.toString());
@@ -120,10 +127,10 @@ public class AvroConverterTest {
         measureGroup.put(s5);
 
         JSONObject expectedSchema = new JSONObject();
-        expectedSchema.put(JsonFormatConstant.DELTA_TYPE, Constant.DELTA_TYPE);
+        expectedSchema.put(JsonFormatConstant.DELTA_TYPE, "windfarm_bmdxz_001");
         expectedSchema.put(JsonFormatConstant.JSON_SCHEMA, measureGroup);
 
-        Assert.assertEquals(expectedSchema.toString(), actualSchema.toString());
+        Assert.assertEquals(expectedSchema.toString(), tsfileSchema.toString());
     }
 
 }

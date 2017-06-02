@@ -56,10 +56,21 @@ public class AvroConverter {
 
 		JSONArray measureGroup = resolveFields(avroSchema.getFields());
 
-		String deltaType = avroSchema.getAliases().iterator().next().split("\\.")[1].toLowerCase();
+		Iterator<String> aliases = avroSchema.getAliases().iterator();
+		String aliase;
+
+		if(aliases.hasNext())
+			aliase = aliases.next();
+		else
+			aliase = avroSchema.getName();
+
+		if(aliase.contains("."))
+			aliase = aliase.split("\\.")[1].toLowerCase();
+		else
+			aliase = aliase.toLowerCase();
 
 		JSONObject tsfileSchema = new JSONObject();
-		tsfileSchema.put(JsonFormatConstant.DELTA_TYPE, deltaType);
+		tsfileSchema.put(JsonFormatConstant.DELTA_TYPE, aliase);
 		tsfileSchema.put(JsonFormatConstant.JSON_SCHEMA, measureGroup);
 
 		logger.debug("the jsonobject converted from avro schema is: {}", tsfileSchema);

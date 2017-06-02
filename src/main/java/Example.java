@@ -27,16 +27,16 @@ public class Example {
         System.out.println(avroSchema);
 
         Configuration conf = new Configuration();
-        String yamlPath = "hdfs://localhost:9000/tsfile/avro-tsfile.yaml";
+        String yamlPath = "src/main/resources/avro-tsfile.yaml";
         AvroConverter converter = new AvroConverter(yamlPath, conf);
 
         JSONObject tsfileSchema = converter.convertSchema(avroSchema);
         System.out.println(tsfileSchema);
 
-        TSRandomAccessFileWriter hdfsOutput = new HDFSOutputStream("hdfs://localhost:9000/tsfile/kmx.tsfile", conf, true);
+        TSRandomAccessFileWriter hdfsOutput = new HDFSOutputStream("src/main/resources/kmx.tsfile", conf, true);
         TsFile tsFile = new TsFile(hdfsOutput, tsfileSchema);
 
-        Path sequencePath = new Path("hdfs://localhost:9000/tsfile/windfarm_BMdxz_001.seq");
+        Path sequencePath = new Path("src/main/resources/windfarm_BMdxz_001.seq");
         SequenceFile.Reader sequenceReader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(sequencePath));
 
         int i = 0;
