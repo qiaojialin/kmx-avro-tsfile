@@ -127,7 +127,6 @@ public class AvroConverterTest {
         measureGroup.put(s5);
 
         JSONObject expectedSchema = new JSONObject();
-        expectedSchema.put(JsonFormatConstant.DELTA_TYPE, "windfarm_bmdxz_001");
         expectedSchema.put(JsonFormatConstant.JSON_SCHEMA, measureGroup);
 
         Assert.assertEquals(expectedSchema.toString(), tsfileSchema.toString());

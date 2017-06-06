@@ -1,7 +1,10 @@
 import cn.edu.thu.tsfile.avro.AvroConverter;
+import cn.edu.thu.tsfile.common.utils.TSRandomAccessFileReader;
 import cn.edu.thu.tsfile.common.utils.TSRandomAccessFileWriter;
+import cn.edu.thu.tsfile.hadoop.HDFSInputStream;
 import cn.edu.thu.tsfile.hadoop.HDFSOutputStream;
 import cn.edu.thu.tsfile.timeseries.FileFormat.TsFile;
+import cn.edu.thu.tsfile.timeseries.read.LocalFileInput;
 import cn.edu.thu.tsfile.timeseries.write.record.TSRecord;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -30,22 +33,26 @@ public class Example {
         String yamlPath = "src/main/resources/avro-tsfile.yaml";
         AvroConverter converter = new AvroConverter(yamlPath, conf);
 
+        //add tsfile schema
         JSONObject tsfileSchema = converter.convertSchema(avroSchema);
         System.out.println(tsfileSchema);
 
         TSRandomAccessFileWriter hdfsOutput = new HDFSOutputStream("src/main/resources/kmx.tsfile", conf, true);
         TsFile tsFile = new TsFile(hdfsOutput, tsfileSchema);
 
+        //add record name as one property
+        String recordName = converter.getRecordName(avroSchema);
+        tsFile.addProp("recordName", recordName);
+
+
         Path sequencePath = new Path("src/main/resources/windfarm_BMdxz_001.seq");
         SequenceFile.Reader sequenceReader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(sequencePath));
 
-        int i = 0;
         try {
             Text key = new Text();
             BytesWritable value = new BytesWritable();
             GenericRecord record;
             while (sequenceReader.next(key, value)) {
-                i++;
                 ByteArrayInputStream in = new ByteArrayInputStream(value.getBytes());
                 BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(in, null);
                 DatumReader<GenericRecord> avroReader = new SpecificDatumReader<>(avroSchema);
@@ -57,6 +64,10 @@ public class Example {
             IOUtils.closeStream(sequenceReader);
             tsFile.close();
         }
-        System.out.println(i);
+
+        //read record name
+        TSRandomAccessFileReader reader = new HDFSInputStream("src/main/resources/kmx.tsfile");
+        TsFile readTsfile = new TsFile(reader);
+        System.out.println(readTsfile.getProp("recordName"));
     }
 }
